@@ -1,37 +1,29 @@
 require('dotenv').config();
 const axios = require('axios');
 
-// Safely extract the city by finding the first argument that isn't a flag
 const args = process.argv.slice(2);
-const city = args.find(arg => !arg.startsWith('--'));
 
-if (!city) {
-  console.log('Usage: node weather.js <city> [--fahrenheit]');
-  console.log('Example: node weather.js London');
-  console.log('Example: node weather.js London --fahrenheit');
+if (args.length === 0) {
+  console.log('Usage: node weather.js <city> [city2] [city3]...');
+  console.log('Example: node weather.js London Mumbai Tokyo');
   process.exit(1);
 }
 
-// 1. Check if the user passed the --fahrenheit flag consistently using `args`
-const isFahrenheit = args.includes('--fahrenheit');
-
-// 2. Set the API unit and display symbols dynamically
-const apiUnit = isFahrenheit ? 'imperial' : 'metric';
-const tempSymbol = isFahrenheit ? '°F' : '°C';
-const speedSymbol = isFahrenheit ? 'mph' : 'm/s';
-
 const API_KEY = process.env.WEATHER_API_KEY;
 
-// NEW: Check if API key exists before making the request
 if (!API_KEY) {
   console.log('Missing API key. Please add WEATHER_API_KEY to your .env file.');
   process.exit(1);
 }
 
-// 3. Inject the dynamic unit into the API URL
-const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=${apiUnit}`;
+const isFahrenheit = args.includes('--fahrenheit');
+const cities = args.filter(arg => !arg.startsWith('--'));
+const apiUnit = isFahrenheit ? 'imperial' : 'metric';
+const tempSymbol = isFahrenheit ? '°F' : '°C';
+const speedSymbol = isFahrenheit ? 'mph' : 'm/s';
 
-async function getWeather() {
+async function getWeather(city) {
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=${apiUnit}`;
   try {
     const response = await axios.get(url);
     const data = response.data;
@@ -39,7 +31,6 @@ async function getWeather() {
     console.log('\n============================');
     console.log(`  ${data.name}, ${data.sys.country}`);
     console.log('============================');
-    // 4. Inject the dynamic temperature symbols
     console.log(`  Temperature : ${data.main.temp}${tempSymbol}`);
     console.log(`  Feels like  : ${data.main.feels_like}${tempSymbol}`);
     console.log(`  Condition   : ${data.weather[0].description}`);
@@ -48,13 +39,19 @@ async function getWeather() {
     console.log('============================\n');
   } catch (error) {
     if (error.response?.status === 404) {
-      console.log(`City "${city}" not found. Please check the spelling.`);
+      console.log(`\nCity "${city}" not found. Please check the spelling.\n`);
     } else if (error.response?.status === 401) {
       console.log('Invalid API key. Please check your .env file.');
     } else {
-      console.log('Something went wrong. Please try again.');
+      console.log(`Something went wrong for "${city}". Please try again.`);
     }
   }
 }
 
-getWeather();
+async function main() {
+  for (const city of cities) {
+    await getWeather(city);
+  }
+}
+
+main();
