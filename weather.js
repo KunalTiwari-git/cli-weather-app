@@ -12,8 +12,8 @@ if (!city) {
   process.exit(1);
 }
 
-// 1. Check if the user passed the --fahrenheit flag
-const isFahrenheit = process.argv.includes('--fahrenheit');
+// 1. Check if the user passed the --fahrenheit flag consistently using `args`
+const isFahrenheit = args.includes('--fahrenheit');
 
 // 2. Set the API unit and display symbols dynamically
 const apiUnit = isFahrenheit ? 'imperial' : 'metric';
@@ -21,6 +21,12 @@ const tempSymbol = isFahrenheit ? '°F' : '°C';
 const speedSymbol = isFahrenheit ? 'mph' : 'm/s';
 
 const API_KEY = process.env.WEATHER_API_KEY;
+
+// NEW: Check if API key exists before making the request
+if (!API_KEY) {
+  console.log('Missing API key. Please add WEATHER_API_KEY to your .env file.');
+  process.exit(1);
+}
 
 // 3. Inject the dynamic unit into the API URL
 const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=${apiUnit}`;
