@@ -1,16 +1,35 @@
 require('dotenv').config();
 const axios = require('axios');
 
-const city = process.argv[2];
+// Safely extract the city by finding the first argument that isn't a flag
+const args = process.argv.slice(2);
+const city = args.find(arg => !arg.startsWith('--'));
 
 if (!city) {
-  console.log('Usage: node weather.js <city>');
+  console.log('Usage: node weather.js <city> [--fahrenheit]');
   console.log('Example: node weather.js London');
+  console.log('Example: node weather.js London --fahrenheit');
   process.exit(1);
 }
 
+// 1. Check if the user passed the --fahrenheit flag consistently using `args`
+const isFahrenheit = args.includes('--fahrenheit');
+
+// 2. Set the API unit and display symbols dynamically
+const apiUnit = isFahrenheit ? 'imperial' : 'metric';
+const tempSymbol = isFahrenheit ? '°F' : '°C';
+const speedSymbol = isFahrenheit ? 'mph' : 'm/s';
+
 const API_KEY = process.env.WEATHER_API_KEY;
-const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+
+// NEW: Check if API key exists before making the request
+if (!API_KEY) {
+  console.log('Missing API key. Please add WEATHER_API_KEY to your .env file.');
+  process.exit(1);
+}
+
+// 3. Inject the dynamic unit into the API URL
+const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=${apiUnit}`;
 
 async function getWeather() {
   try {
@@ -20,11 +39,12 @@ async function getWeather() {
     console.log('\n============================');
     console.log(`  ${data.name}, ${data.sys.country}`);
     console.log('============================');
-    console.log(`  Temperature : ${data.main.temp}°C`);
-    console.log(`  Feels like  : ${data.main.feels_like}°C`);
+    // 4. Inject the dynamic temperature symbols
+    console.log(`  Temperature : ${data.main.temp}${tempSymbol}`);
+    console.log(`  Feels like  : ${data.main.feels_like}${tempSymbol}`);
     console.log(`  Condition   : ${data.weather[0].description}`);
     console.log(`  Humidity    : ${data.main.humidity}%`);
-    console.log(`  Wind speed  : ${data.wind.speed} m/s`);
+    console.log(`  Wind speed  : ${data.wind.speed} ${speedSymbol}`);
     console.log('============================\n');
   } catch (error) {
     if (error.response?.status === 404) {
