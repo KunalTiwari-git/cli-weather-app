@@ -25,6 +25,22 @@ function getTemperatureColor(temp) {
   return chalk.red(temp + tempSymbol);
 }
 
+function showHelp() {
+  console.log('\n' + chalk.cyan.bold('CLI Weather App — Usage Guide'));
+  console.log(chalk.cyan('=========================================='));
+  console.log(`
+  ${chalk.yellow('node weather.js <city>')}                     Get current weather
+  ${chalk.yellow('node weather.js <city> --fahrenheit')}        Use Fahrenheit units
+  ${chalk.yellow('node weather.js <city> --forecast')}          Get 5-day forecast
+  ${chalk.yellow('node weather.js London Mumbai')}              Multiple cities at once
+  ${chalk.yellow('node weather.js --add-favourite <city>')}     Add city to favourites
+  ${chalk.yellow('node weather.js --remove-favourite <city>')}  Remove city from favourites
+  ${chalk.yellow('node weather.js --favourites')}               Weather for all favourites
+  ${chalk.yellow('node weather.js --help')}                     Show this help message
+  `);
+  console.log(chalk.cyan('==========================================') + '\n');
+}
+
 function loadFavourites() {
   if (!fs.existsSync(FAVOURITES_FILE)) return [];
   return JSON.parse(fs.readFileSync(FAVOURITES_FILE, 'utf-8'));
@@ -121,6 +137,12 @@ async function getForecast(city) {
 }
 
 async function main() {
+
+  if (args.includes('--help')) {
+    showHelp();
+    return;
+  }
+  
   const addIndex = args.indexOf('--add-favourite');
   if (addIndex !== -1) {
     const city = args[addIndex + 1];
