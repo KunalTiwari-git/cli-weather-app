@@ -13,22 +13,20 @@ if (!API_KEY) {
 }
 
 const isFahrenheit = args.includes('--fahrenheit');
+const isForecast = args.includes('--forecast');
 const apiUnit = isFahrenheit ? 'imperial' : 'metric';
 const tempSymbol = isFahrenheit ? '°F' : '°C';
 const speedSymbol = isFahrenheit ? 'mph' : 'm/s';
 
-// Load favourites from file
 function loadFavourites() {
   if (!fs.existsSync(FAVOURITES_FILE)) return [];
   return JSON.parse(fs.readFileSync(FAVOURITES_FILE, 'utf-8'));
 }
 
-// Save favourites to file
 function saveFavourites(favourites) {
   fs.writeFileSync(FAVOURITES_FILE, JSON.stringify(favourites, null, 2));
 }
 
-// Add a city to favourites
 function addFavourite(city) {
   const favourites = loadFavourites();
   if (favourites.includes(city)) {
@@ -40,7 +38,6 @@ function addFavourite(city) {
   console.log(`"${city}" added to favourites.`);
 }
 
-// Remove a city from favourites
 function removeFavourite(city) {
   let favourites = loadFavourites();
   if (!favourites.includes(city)) {
@@ -78,8 +75,45 @@ async function getWeather(city) {
   }
 }
 
+async function getForecast(city) {
+  const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=${apiUnit}`;
+  try {
+    const response = await axios.get(url);
+    const data = response.data;
+
+    console.log(`\n📅 5-Day Forecast for ${data.city.name}, ${data.city.country}`);
+    console.log('========================================');
+
+    const days = {};
+    for (const item of data.list) {
+      const date = item.dt_txt.split(' ')[0];
+      if (!days[date]) {
+        days[date] = item;
+      }
+    }
+
+    for (const [date, item] of Object.entries(days)) {
+      console.log(`\n  📆 ${date}`);
+      console.log(`  Temperature : ${item.main.temp}${tempSymbol}`);
+      console.log(`  Feels like  : ${item.main.feels_like}${tempSymbol}`);
+      console.log(`  Condition   : ${item.weather[0].description}`);
+      console.log(`  Humidity    : ${item.main.humidity}%`);
+      console.log(`  Wind speed  : ${item.wind.speed} ${speedSymbol}`);
+      console.log('  ----------------------------------------');
+    }
+
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log(`\nCity "${city}" not found. Please check the spelling.\n`);
+    } else if (error.response?.status === 401) {
+      console.log('Invalid API key. Please check your .env file.');
+    } else {
+      console.log(`Something went wrong for "${city}". Please try again.`);
+    }
+  }
+}
+
 async function main() {
-  // Handle --add-favourite flag
   const addIndex = args.indexOf('--add-favourite');
   if (addIndex !== -1) {
     const city = args[addIndex + 1];
@@ -91,7 +125,6 @@ async function main() {
     return;
   }
 
-  // Handle --remove-favourite flag
   const removeIndex = args.indexOf('--remove-favourite');
   if (removeIndex !== -1) {
     const city = args[removeIndex + 1];
@@ -103,7 +136,6 @@ async function main() {
     return;
   }
 
-  // Handle --favourites flag
   if (args.includes('--favourites')) {
     const favourites = loadFavourites();
     if (favourites.length === 0) {
@@ -117,14 +149,22 @@ async function main() {
     return;
   }
 
-  // Default: get weather for provided cities
   const cities = args.filter(arg => !arg.startsWith('--'));
   if (cities.length === 0) {
     console.log('Usage: node weather.js <city> [city2] [city3]...');
+    console.log('       node weather.js <city> --forecast');
+    console.log('       node weather.js <city> --fahrenheit');
     console.log('       node weather.js --add-favourite <city>');
     console.log('       node weather.js --remove-favourite <city>');
     console.log('       node weather.js --favourites');
     process.exit(1);
+  }
+
+  if (isForecast) {
+    for (const city of cities) {
+      await getForecast(city);
+    }
+    return;
   }
 
   for (const city of cities) {
