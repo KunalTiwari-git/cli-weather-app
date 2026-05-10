@@ -1,10 +1,10 @@
 {
-  "name": "cli-weather-app",
+  "name": "kunal-weather-cli",
   "version": "1.0.0",
   "description": "A simple command-line weather app built with Node.js",
   "main": "weather.js",
   "bin": {
-    "weather": "./weather.js"
+    "weather": "weather.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
