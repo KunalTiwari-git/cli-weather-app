@@ -9,6 +9,11 @@ git clone https://github.com/KunalTiwari-git/cli-weather-app.git
 cd cli-weather-app
 npm install
 ```
+## Install via npm
+
+```bash
+npm install -g kunal-weather-cli
+```
 
 ## Setup
 
